@@ -1174,7 +1174,7 @@ if ($errors['err'] && isset($_POST['a'])) {
                         class="<?php if ($cfg->isRichTextEnabled()) echo 'richtext';
                             ?> draft draft-delete fullscreen" <?php
     list($draft, $attrs) = Draft::getDraftAndDataAttrs('ticket.note', $ticket->getId(), $info['note']);
-    echo $attrs; ?>><?php echo ThreadEntryBody::clean($_POST ? $info['note'] : $draft);
+    echo htmlspecialchars($attrs, ENT_QUOTES, 'UTF-8'); ?>><?php echo htmlspecialchars(ThreadEntryBody::clean($_POST ? $info['note'] : $draft), ENT_QUOTES, 'UTF-8');
                         ?></textarea>
                 <div class="attachments">
                 <?php

@@ -84,8 +84,12 @@ if ($ticket
 ) {
     // Thank the user and promise speedy resolution!
     echo Format::viewableImages(
-        $ticket->replaceVars(
-            $page->getLocalBody()
+        htmlspecialchars(
+            $ticket->replaceVars(
+                $page->getLocalBody()
+            ),
+            ENT_QUOTES,
+            'UTF-8'
         ),
         ['type' => 'P']
     );
