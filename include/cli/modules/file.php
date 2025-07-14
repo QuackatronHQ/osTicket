@@ -193,7 +193,8 @@ class FileManager extends Module {
                     $this->stderr->write('IOError: '.$e->getMessage());
                 }
             }
-            $this->stdout->write("Migrated $count files\n");
+            $this->stdout->write("Migrated $count files
+");
             break;
 
         /**
@@ -289,9 +290,13 @@ class FileManager extends Module {
                 if (strlen($header) != $hlen)
                     $this->fail('Short read getting header info');
 
-                $header = unserialize($header);
-                if (!$header)
+                // Deserialize header with restricted classes and validate structure
+                $header = unserialize($header, ['allowed_classes' => false]);
+                if ($header === false)
                     $this->fail('Unable to decipher file header');
+                if (!is_array($header) || !isset($header['file']) || !is_array($header['file'])) {
+                    $this->fail('Invalid file header');
+                }
 
                 // Find or create the file record
                 $finfo = $header['file'];
