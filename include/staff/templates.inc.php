@@ -34,12 +34,28 @@ $qstr = '&amp;'. Http::build_query($qs);
 $qs += array('sort' => $_REQUEST['sort'], 'order' => $_REQUEST['order']);
 $pageNav->setURL('templates.php', $qs);
 $qstr .= '&amp;order='.($order=='DESC' ? 'ASC' : 'DESC');
-$query="$sql GROUP BY tpl.tpl_id ORDER BY $order_by LIMIT ".$pageNav->getStart().",".$pageNav->getLimit();
-$res=db_query($query);
-if($res && ($num=db_num_rows($res)))
+
+// Prepare secure query using mysqli prepared statements
+$mysqli = new mysqli(DBHOST, DBUSER, DBPASS, DBNAME);
+if ($mysqli->connect_error) {
+    error_log('Database Connection Error: ' . $mysqli->connect_error);
+    $res = null;
+    $num = 0;
+} else {
+    $query = $sql . ' GROUP BY tpl.tpl_id ORDER BY ' . $order_by . ' LIMIT ?, ?';
+    $stmt = $mysqli->prepare($query);
+    $start = (int)$pageNav->getStart();
+    $limit = (int)$pageNav->getLimit();
+    $stmt->bind_param('ii', $start, $limit);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $num = $res->num_rows;
+}
+if ($num) {
     $showing=$pageNav->showing().' '._N('template', 'templates', $num);
-else
+} else {
     $showing=__('No templates found!');
+}
 
 ?>
 <form action="templates.php" method="POST" name="tpls">
@@ -98,15 +114,15 @@ else
     <?php
         $total=0;
         $ids=($errors && is_array($_POST['ids']))?$_POST['ids']:null;
-        if($res && db_num_rows($res)):
+        if($res && $num):
             $defaultTplId=$cfg->getDefaultTemplateId();
-            while ($row = db_fetch_array($res)) {
+            while ($row = $res->fetch_assoc()) {
                 $inuse=($row['depts'] || $row['tpl_id']==$defaultTplId);
                 $sel=false;
                 if($ids && in_array($row['tpl_id'],$ids))
                     $sel=true;
 
-                $default=($defaultTplId==$row['tpl_id'])?'<small class="faded">('.__('System Default').')</small>':'';
+                $default=($defaultTplId==$row['tpl_id'])?'<small class="faded">('.__('System Default').')</small>':' ';
                 ?>
             <tr id="<?php echo $row['tpl_id']; ?>">
                 <td align="center">
