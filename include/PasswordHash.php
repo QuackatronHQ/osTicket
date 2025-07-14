@@ -58,9 +58,9 @@ class PasswordHash {
 			$output = '';
 			for ($i = 0; $i < $count; $i += 16) {
 				$this->random_state =
-				    md5(microtime() . $this->random_state);
+					hash('sha256', microtime() . $this->random_state);
 				$output .=
-				    pack('H*', md5($this->random_state));
+					pack('H*', hash('sha256', $this->random_state));
 			}
 			$output = substr($output, 0, $count);
 		}
@@ -128,22 +128,7 @@ class PasswordHash {
 		# in PHP would result in much worse performance and
 		# consequently in lower iteration counts and hashes that are
 		# quicker to crack (by non-PHP code).
-		if (PHP_VERSION >= '5') {
-			$hash = md5($salt . $password, TRUE);
-			do {
-				$hash = md5($hash . $password, TRUE);
-			} while (--$count);
-		} else {
-			$hash = pack('H*', md5($salt . $password));
-			do {
-				$hash = pack('H*', md5($hash . $password));
-			} while (--$count);
-		}
-
-		$output = substr($setting, 0, 12);
-		$output .= $this->encode64($hash, 16);
-
-		return $output;
+		return password_hash($password, PASSWORD_DEFAULT);
 	}
 
 	function gensalt_extended($input)

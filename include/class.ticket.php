@@ -499,7 +499,7 @@ implements RestrictedAccess, Threadable, Searchable {
     // Deprecated
     function getOldAuthToken() {
         # XXX: Support variable email address (for CCs)
-        return md5($this->getId() . strtolower($this->getEmail()) . SECRET_SALT);
+        return password_hash($this->getId() . strtolower($this->getEmail()) . SECRET_SALT, PASSWORD_DEFAULT);
     }
 
     function getName(){
