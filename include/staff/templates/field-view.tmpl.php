@@ -58,9 +58,11 @@ $(function() {
         $('div#inline-edit-next').empty();
         var url = thisHref.replace("#", "ajax.php/");
         var $container = $('div#inline-edit-next');
-        $container.load(url, function () {
+        $.get(url, function (data) {
+            $container.html(data);
             $('div#inline-edit-p1').hide();
-        }).show();
+            $container.show();
+        });
         return false;
      });
 });
