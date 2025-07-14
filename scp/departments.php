@@ -20,6 +20,13 @@ if($_REQUEST['id'] && !($dept=Dept::lookup($_REQUEST['id'])))
     $errors['err']=sprintf(__('%s: Unknown or invalid ID.'), __('department'));
 
     if($_POST){
+        // CSRF token validation
+        if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            header('HTTP/1.1 403 Forbidden');
+            echo 'Invalid CSRF token';
+            exit;
+        }
+
         switch(strtolower($_POST['do'])){
             case 'update':
                 if(!$dept){
@@ -63,7 +70,7 @@ if($_REQUEST['id'] && !($dept=Dept::lookup($_REQUEST['id'])))
                                     $msg=sprintf(__('Successfully made %s PUBLIC'),
                                         _N('selected department', 'selected departments', $count));
                                 else
-                                    $warn=sprintf(__(
+                                    $warn=sprintf__(
                                         /* Phrase will read:
                                            <a> of <b> <selected objects> made PUBLIC */
                                         '%1$d of %2$d %3$s made PUBLIC'), $num, $count,
@@ -82,7 +89,7 @@ if($_REQUEST['id'] && !($dept=Dept::lookup($_REQUEST['id'])))
                                     $msg = sprintf(__('Successfully made %s PRIVATE'),
                                         _N('selected department', 'selected epartments', $count));
                                 else
-                                    $warn = sprintf(__(
+                                    $warn = sprintf__(
                                         /* Phrase will read:
                                            <a> of <b> <selected objects> made PRIVATE */
                                         '%1$d of %2$d %3$s made PRIVATE'), $num, $count,
