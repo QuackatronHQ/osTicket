@@ -80,9 +80,9 @@
         url: 'ajax.php/lock/{0}/{1}/renew'.replace('{0}',this.lockId).replace('{1}',this.objectId),
         dataType: 'json',
         cache: false,
-        success: $.proxy(this.update, this),
-        error: $.proxy(this.retry, this, this.renew),
-        complete: $.proxy(function() { this.ajaxActive = false; }, this)
+        success: this.update.bind(this),
+        error: this.retry.bind(this, this.renew),
+        complete: function() { this.ajaxActive = false; }.bind(this)
       });
       return this.locked = $.Deferred();
     },

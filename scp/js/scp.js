@@ -137,7 +137,7 @@ var scp_prep = function() {
         if(!fObj.data('changed')){
             fObj.data('changed', true);
             $('input[type=submit], button[type=submit]', fObj).addClass('save pending');
-            $(window).bind('beforeunload', function(e) {
+            $(window).on('beforeunload', function(e) {
                 return __('Are you sure you want to leave? Any changes or info you\'ve entered will be discarded!');
             });
             $(document).on('pjax:beforeSend.changed', function(e) {
@@ -840,8 +840,8 @@ $.confirmAction = function(action, form, confirmed) {
 
 $.userLookup = function (url, cb) {
     $.dialog(url, 201, function (xhr, user) {
-        if ($.type(user) == 'string')
-            user = $.parseJSON(user);
+        if (typeof user === 'string')
+            user = JSON.parse(user);
         if (cb) return cb(user);
     }, {
         onshow: function() { $('#user-search').focus(); }
@@ -1103,7 +1103,7 @@ $(document).on('click', 'a.collaborator, a.collaborators:not(.noclick)', functio
     e.preventDefault();
     var url = 'ajax.php/'+$(this).attr('href').substr(1);
     $.dialog(url, 201, function (xhr) {
-       var resp = $.parseJSON(xhr.responseText);
+       var resp = JSON.parse(xhr.responseText);
        $('#t'+resp.id+'-recipients').text(resp.text);
        $('.tip_box').remove();
     }, {
