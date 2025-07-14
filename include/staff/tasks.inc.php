@@ -160,9 +160,14 @@ $tasks->values('id', 'number', 'created', 'staff_id', 'team_id',
 $queue_sort_key = sprintf(':Q%s:%s:sort', ObjectModel::OBJECT_TYPE_TASK, $queue_name);
 
 if (isset($_GET['sort'])) {
-    $_SESSION[$queue_sort_key] = array($_GET['sort'], $_GET['dir']);
-}
-elseif (!isset($_SESSION[$queue_sort_key])) {
+    $sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+    if (!in_array($sort, $queue_sort_options, true)) {
+        $sort = $queue_sort_options[0];
+    }
+    $dir = filter_input(INPUT_GET, 'dir', FILTER_VALIDATE_INT);
+    $dir = ($dir === 1) ? 1 : 0;
+    $_SESSION[$queue_sort_key] = array($sort, $dir);
+} elseif (!isset($_SESSION[$queue_sort_key])) {
     $_SESSION[$queue_sort_key] = array($queue_sort_options[0], 0);
 }
 
