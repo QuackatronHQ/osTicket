@@ -292,12 +292,7 @@ class Auth_SASL_SCRAM extends Auth_SASL_Common
             return base64_encode(fread($fd, 32));
 
         } else {
-            $str = '';
-            for ($i=0; $i<32; $i++) {
-                $str .= chr(mt_rand(0, 255));
-            }
-
-            return base64_encode($str);
+            return base64_encode(random_bytes(32));
         }
     }
 
