@@ -583,7 +583,7 @@ class DynamicList extends VerySimpleModel implements CustomList {
                 if ($item && $item->setConfiguration($data, $errors))
                     $imported++;
                 else
-                    echo sprintf(__('Unable to import item: %s'), print_r($data, true));
+                    echo sprintf(__('Unable to import item: %s'), htmlspecialchars(print_r($data, true), ENT_QUOTES, 'UTF-8'));
             }
             db_autocommit(true);
         }
