@@ -322,15 +322,26 @@ class Crypt_AES extends Crypt_Rijndael {
                 if ($len >= 16) {
                     if ($this->enbuffer['enmcrypt_init'] === false || $len > 280) {
                         if ($this->enbuffer['enmcrypt_init'] === true) {
-                            mcrypt_generic_init($this->enmcrypt, $this->key, $iv);
                             $this->enbuffer['enmcrypt_init'] = false;
                         }
-                        $ciphertext.= mcrypt_generic($this->enmcrypt, substr($plaintext, $i, $len - $len % 16));
+                        $ciphertext.= openssl_encrypt(
+                            substr($plaintext, $i, $len - $len % 16),
+                            'AES-256-CFB',
+                            $this->key,
+                            OPENSSL_RAW_DATA,
+                            $iv
+                        );
                         $iv = substr($ciphertext, -16);
                         $len%= 16;
                     } else {
                         while ($len >= 16) {
-                            $iv = mcrypt_generic($this->ecb, $iv) ^ substr($plaintext, $i, 16);
+                            $iv = openssl_encrypt(
+                                $iv,
+                                'AES-256-ECB',
+                                $this->key,
+                                OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
+                                ''
+                            ) ^ substr($plaintext, $i, 16);
                             $ciphertext.= $iv;
                             $len-= 16;
                             $i+= 16;
@@ -339,7 +350,13 @@ class Crypt_AES extends Crypt_Rijndael {
                 }
 
                 if ($len) {
-                    $iv = mcrypt_generic($this->ecb, $iv);
+                    $iv = openssl_encrypt(
+                        $iv,
+                        'AES-256-ECB',
+                        $this->key,
+                        OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
+                        ''
+                    );
                     $block = $iv ^ substr($plaintext, -$len);
                     $iv = substr_replace($iv, $block, 0, $len);
                     $ciphertext.= $block;
@@ -353,11 +370,13 @@ class Crypt_AES extends Crypt_Rijndael {
                 $plaintext = $this->_pad($plaintext);
             }
 
-            $ciphertext = mcrypt_generic($this->enmcrypt, $plaintext);
-
-            if (!$this->continuousBuffer) {
-                mcrypt_generic_init($this->enmcrypt, $this->key, $this->iv);
-            }
+            $ciphertext = openssl_encrypt(
+                $plaintext,
+                'AES-256-CBC',
+                $this->key,
+                OPENSSL_RAW_DATA,
+                $this->iv
+            );
 
             return $ciphertext;
         }
@@ -377,58 +396,10 @@ class Crypt_AES extends Crypt_Rijndael {
     function decrypt($ciphertext)
     {
         if ( CRYPT_AES_MODE == CRYPT_AES_MODE_MCRYPT ) {
-            $this->_mcryptSetup();
-
-            if ($this->mode == 'ncfb' && $this->continuousBuffer) {
-                $iv = &$this->decryptIV;
-                $pos = &$this->debuffer['pos'];
-                $len = strlen($ciphertext);
-                $plaintext = '';
-                $i = 0;
-                if ($pos) {
-                    $orig_pos = $pos;
-                    $max = 16 - $pos;
-                    if ($len >= $max) {
-                        $i = $max;
-                        $len-= $max;
-                        $pos = 0;
-                    } else {
-                        $i = $len;
-                        $pos+= $len;
-                        $len = 0;
-                    }
-                    // ie. $i = min($max, $len), $len-= $i, $pos+= $i, $pos%= $blocksize
-                    $plaintext = substr($iv, $orig_pos) ^ $ciphertext;
-                    $iv = substr_replace($iv, substr($ciphertext, 0, $i), $orig_pos, $i);
-                }
-                if ($len >= 16) {
-                    $cb = substr($ciphertext, $i, $len - $len % 16);
-                    $plaintext.= mcrypt_generic($this->ecb, $iv . $cb) ^ $cb;
-                    $iv = substr($cb, -16);
-                    $len%= 16;
-                }
-                if ($len) {
-                    $iv = mcrypt_generic($this->ecb, $iv);
-                    $plaintext.= $iv ^ substr($ciphertext, -$len);
-                    $iv = substr_replace($iv, substr($ciphertext, -$len), 0, $len);
-                    $pos = $len;
-                }
-
-                return $plaintext;
-            }
-
-            if ($this->paddable) {
-                // we pad with chr(0) since that's what mcrypt_generic does.  to quote from http://php.net/function.mcrypt-generic :
-                // "The data is padded with "\0" to make sure the length of the data is n * blocksize."
-                $ciphertext = str_pad($ciphertext, (strlen($ciphertext) + 15) & 0xFFFFFFF0, chr(0));
-            }
-
-            $plaintext = mdecrypt_generic($this->demcrypt, $ciphertext);
-
-            if (!$this->continuousBuffer) {
-                mcrypt_generic_init($this->demcrypt, $this->key, $this->iv);
-            }
-
+            $method = 'aes-256-cbc';
+            $ivLength = openssl_cipher_iv_length($method);
+            $iv = substr($this->iv, 0, $ivLength);
+            $plaintext = openssl_decrypt($ciphertext, $method, $this->key, OPENSSL_RAW_DATA, $iv);
             return $this->paddable ? $this->_unpad($plaintext) : $plaintext;
         }
 

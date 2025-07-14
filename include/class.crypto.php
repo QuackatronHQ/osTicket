@@ -325,8 +325,7 @@ Class CryptoMcrypt extends CryptoAlgo {
     # WARNING: Change and you will lose your passwords ...
     var $ciphers = array(
             CRYPTO_CIPHER_MCRYPT_RIJNDAEL_128 => array(
-                'name' => MCRYPT_RIJNDAEL_128,
-                'mode' => 'cbc',
+                'name' => 'AES-256-CBC',
                 ),
             );
 
@@ -338,14 +337,12 @@ Class CryptoMcrypt extends CryptoAlgo {
 
        return ($c
                && $c['name']
-               && $c['mode']
                && self::exists()
-               && mcrypt_module_open($c['name'], '', $c['mode'], '')
                );
     }
 
     /**
-     * Encrypt clear-text data using the mycrpt library. Optionally, a
+     * Encrypt clear-text data using the openssl library. Optionally, a
      * configuration tag-id can be passed as the second parameter to specify
      * the actual encryption algorithm to be used.
      *
@@ -361,24 +358,16 @@ Class CryptoMcrypt extends CryptoAlgo {
                 || !$cipher['cid'])
             return false;
 
-        if(!($td = mcrypt_module_open($cipher['name'], '', $cipher['mode'], '')))
+        $method = $cipher['name'];
+        $ivsize = openssl_cipher_iv_length($method);
+        $iv = Crypto::random($ivsize);
+        $key = $this->getKeyHash($iv, 32);
+
+        $encrypted = openssl_encrypt($text, $method, $key, OPENSSL_RAW_DATA, $iv);
+        if ($encrypted === false)
             return false;
 
-        $keysize = mcrypt_enc_get_key_size($td);
-        $ivsize = mcrypt_enc_get_iv_size($td);
-        $iv = Crypto::random($ivsize);
-
-        //Add padding
-        $blocksize = mcrypt_enc_get_block_size($td);
-        $pad = $blocksize - (strlen($text) % $blocksize);
-        $text .= str_repeat(chr($pad), $pad);
-
-        // Do the encryption.
-        mcrypt_generic_init($td, $this->getKeyHash($iv, $ivsize), $iv);
-        $ciphertext = $iv . mcrypt_generic($td, $text);
-        mcrypt_generic_deinit($td);
-        mcrypt_module_close($td);
-
+        $ciphertext = $iv . $encrypted;
         return sprintf('$%s$%s', $cipher['cid'], $ciphertext);
     }
 
@@ -398,40 +387,32 @@ Class CryptoMcrypt extends CryptoAlgo {
                  )
              return false;
 
-         list(, $cid, $ciphertext) = explode('$', $ciphertext, 3);
+         list(, $cid, $data) = explode('$', $ciphertext, 3);
 
          if(!$cid
-                 || !$ciphertext
+                 || !$data
                  || !($cipher=$this->getCipher($cid))
                  || $cipher['cid']!=$cid)
              return false;
 
-         if(!($td = mcrypt_module_open($cipher['name'], '', $cipher['mode'], '')))
-             return false;
+         $method = $cipher['name'];
+         $ivsize = openssl_cipher_iv_length($method);
 
-         $keysize = mcrypt_enc_get_key_size($td);
-         $ivsize = mcrypt_enc_get_iv_size($td);
-
-         $iv = substr($ciphertext, 0, $ivsize);
-         if (!($ciphertext = substr($ciphertext, $ivsize)))
+         $iv = substr($data, 0, $ivsize);
+         if (!($encrypted = substr($data, $ivsize)))
             return false;
 
-         // Do the decryption.
-         mcrypt_generic_init($td, $this->getKeyHash($iv, $ivsize), $iv);
-         $plaintext = mdecrypt_generic($td, $ciphertext);
-         mcrypt_generic_deinit($td);
-         mcrypt_module_close($td);
-
-         // Remove the padding.
-         $pad = ord($plaintext[strlen($plaintext) -1]);
-         $plaintext = substr($plaintext, 0, strlen($plaintext) - $pad);
+         $key = $this->getKeyHash($iv, 32);
+         $plaintext = openssl_decrypt($encrypted, $method, $key, OPENSSL_RAW_DATA, $iv);
+         if ($plaintext === false)
+            return false;
 
          return $plaintext;
     }
 
     static function exists() {
-        return (extension_loaded('mcrypt')
-                && function_exists('mcrypt_module_open'));
+        return (extension_loaded('openssl')
+                && function_exists('openssl_encrypt'));
     }
 }
 
