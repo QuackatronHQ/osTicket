@@ -45,6 +45,13 @@ $canned_form = new SimpleForm(array(
    )),
 ));
 
+// Generate CSRF token
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+// Add CSRF token to the form as a hidden field
+$canned_form->addHiddenField('csrf_token', $_SESSION['csrf_token']);
+
 // Set fields' attachments so exsting files stay put
 if ($canned
     && $canned->attachments
@@ -53,6 +60,13 @@ if ($canned
 }
 
 if ($_POST) {
+    // CSRF validation
+    $csrf = $_POST['csrf_token'] ?? '';
+    if (!$csrf || !hash_equals($_SESSION['csrf_token'], $csrf)) {
+        header('HTTP/1.1 403 Forbidden');
+        exit('Invalid CSRF token');
+    }
+
     switch(strtolower($_POST['do'])) {
         case 'update':
             if(!$canned) {

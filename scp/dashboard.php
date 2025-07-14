@@ -15,9 +15,21 @@
 **********************************************************************/
 require('staff.inc.php');
 
+// CSRF token generation
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 require_once INCLUDE_DIR . 'class.report.php';
 
 if ($_POST['export']) {
+    // CSRF token validation
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        header($_SERVER['SERVER_PROTOCOL'] . ' 403 Forbidden');
+        echo 'Invalid CSRF token';
+        exit;
+    }
+
     $report = new OverviewReport($_POST['start'], $_POST['period']);
     switch (true) {
     case ($data = $report->getTabularData($_POST['export'])):

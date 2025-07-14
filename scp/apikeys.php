@@ -16,11 +16,21 @@
 require('admin.inc.php');
 include_once(INCLUDE_DIR.'class.api.php');
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+}
+
 $api=null;
 if($_REQUEST['id'] && !($api=API::lookup($_REQUEST['id'])))
     $errors['err']=sprintf(__('%s: Unknown or invalid ID.'), __('API Key'));
 
 if($_POST){
+    if (!isset($_POST['csrf_token'], $_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(400);
+        exit('Invalid CSRF token');
+    }
     switch(strtolower($_POST['do'])){
         case 'update':
             if(!$api){
