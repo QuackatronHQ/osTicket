@@ -4,14 +4,14 @@ $info=($_POST && $errors)?Format::input($_POST):@Format::htmlchars($org->getInfo
 if (!$info['title'])
     $info['title'] = Format::htmlchars($org->getName());
 ?>
-<h3 class="drag-handle"><?php echo $info['title']; ?></h3>
+<h3 class="drag-handle"><?php echo htmlspecialchars($info['title'], ENT_QUOTES, 'UTF-8'); ?></h3>
 <b><a class="close" href="#"><i class="icon-remove-circle"></i></a></b>
 <hr/>
 <?php
 if ($info['error']) {
-    echo sprintf('<p id="msg_error">%s</p>', $info['error']);
+    echo sprintf('<p id="msg_error">%s</p>', htmlspecialchars($info['error'], ENT_QUOTES, 'UTF-8'));
 } elseif ($info['msg']) {
-    echo sprintf('<p id="msg_notice">%s</p>', $info['msg']);
+    echo sprintf('<p id="msg_notice">%s</p>', htmlspecialchars($info['msg'], ENT_QUOTES, 'UTF-8'));
 } ?>
 <ul class="tabs" id="orgprofile">
     <li class="active"><a href="#profile"
@@ -126,7 +126,7 @@ if ($ticket && $ticket->getOwnerId() == $user->getId())
                     <?php echo __('Primary Contacts'); ?>:
                 </td>
                 <td>
-                    <input type="checkbox" name="collab-pc-flag" value="1" <?php echo $info['collab-pc-flag']?'checked="checked"':''; ?>>
+                    <input type="checkbox" name="collab-pc-flag" value="1" <?php echo $info['collab-pc-flag']?'checked="checked"':''; ?>><
                     <?php echo __('Add to all tickets from this organization'); ?>
                 </td>
             </tr>
@@ -135,7 +135,7 @@ if ($ticket && $ticket->getOwnerId() == $user->getId())
                     <?php echo __('Organization Members'); ?>:
                 </td>
                 <td>
-                    <input type="checkbox" name="collab-all-flag" value="1" <?php echo $info['collab-all-flag']?'checked="checked"':''; ?>>
+                    <input type="checkbox" name="collab-all-flag" value="1" <?php echo $info['collab-all-flag']?'checked="checked"':''; ?>><
                     <?php echo __('Add to all tickets from this organization'); ?>
                 </td>
             </tr>
@@ -151,7 +151,7 @@ if ($ticket && $ticket->getOwnerId() == $user->getId())
                 </td>
                 <td>
                     <input type="text" size="40" maxlength="256" name="domain"
-                        value="<?php echo $info['domain']; ?>" />
+                        value="<?php echo htmlspecialchars($info['domain'], ENT_QUOTES, 'UTF-8'); ?>" />
                     <br/><span class="error"><?php echo $errors['domain']; ?></span>
                 </td>
             </tr>

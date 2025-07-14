@@ -99,7 +99,7 @@ if ($_POST)
                       <?php } ?>
                       <i class="icon-user"></i>
                       <span id="user-name"><?php echo Format::htmlchars($user->getName()); ?></span>
-                      &lt;<span id="user-email"><?php echo $user->getEmail(); ?></span>&gt;
+                      &lt;<span id="user-email"><?php echo Format::htmlchars($user->getEmail()); ?></span>&gt;
                     </a>
                     <a class="inline button" style="overflow:inherit" href="#"
                     onclick="javascript:
@@ -130,7 +130,7 @@ if ($_POST)
                 onclick="javascript:
                 $.userLookup('ajax.php/users/lookup/form', function (user) {
                   var newUser = new Option(user.email + ' - ' + user.name, user.id, true, true);
-                  return $(&quot;#user-name&quot;).append(newUser).trigger('change');
+                  return $("#user-name").append(newUser).trigger('change');
                 });
                 return false;
                 "><i class="icon-plus"></i> <?php echo __('Add New'); ?></a>
@@ -159,7 +159,7 @@ if ($_POST)
             onclick="javascript:
             $.userLookup('ajax.php/users/lookup/form', function (user) {
               var newUser = new Option(user.name, user.id, true, true);
-              return $(&quot;#cc_users_open&quot;).append(newUser).trigger('change');
+              return $("#cc_users_open").append(newUser).trigger('change');
             });
             return false;
             "><i class="icon-plus"></i> <?php echo __('Add New'); ?></a>

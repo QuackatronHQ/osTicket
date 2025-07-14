@@ -175,7 +175,7 @@ foreach ($groups as $g=>$desc) {
                 $(this).removeAttr('selected');
             // Set the selected period by the option's value (periods equal
             // option's values)
-            if ($(this).val() == "<?php echo $report->end; ?>")
+            if ($(this).val() == "<?php echo Format::htmlchars($report->end); ?>")
                 $(this).attr("selected","selected");
         });
     <?php } ?>
