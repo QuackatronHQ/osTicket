@@ -4,23 +4,25 @@ if(!defined('OSTADMININC') || !$thisstaff || !$thisstaff->isAdmin() || !$filter)
 $qs = array();
 $select='SELECT rule.* ';
 $from='FROM '.FILTER_RULE_TABLE.' rule ';
-$where='WHERE rule.filter_id='.db_input($filter->getId());
+$where='WHERE rule.filter_id = :filter_id';
+$params = array(':filter_id' => $filter->getId());
 $search=false;
 if($_REQUEST['q'] && strlen($_REQUEST['q'])>3) {
     $search=true;
-    if(strpos($_REQUEST['q'],'@') && Validator::is_email($_REQUEST['q']))
-        $where.=' AND rule.val='.db_input($_REQUEST['q']);
-    else
-        $where.=' AND rule.val LIKE "%'.db_input($_REQUEST['q'],false).'%"';
-
-}elseif($_REQUEST['q']) {
+    if(strpos($_REQUEST['q'],'@') && Validator::is_email($_REQUEST['q'])) {
+        $where .= ' AND rule.val = :q';
+        $params[':q'] = $_REQUEST['q'];
+    } else {
+        $where .= ' AND rule.val LIKE :q';
+        $params[':q'] = '%'.$_REQUEST['q'].'%';
+    }
+} elseif($_REQUEST['q']) {
     $errors['q']=__('Term too short!');
 }
 
 $sortOptions=array('email'=>'rule.val','status'=>'isactive','created'=>'rule.created','updated'=>'rule.updated');
 $orderWays=array('DESC'=>'DESC','ASC'=>'ASC');
 $sort=($_REQUEST['sort'] && $sortOptions[strtolower($_REQUEST['sort'])])?strtolower($_REQUEST['sort']):'email';
-//Sorting options...
 if($sort && $sortOptions[$sort]) {
     $order_column =$sortOptions[$sort];
 }
@@ -45,8 +47,27 @@ $qstr = '&amp;'. Http::build_query($qs);
 $qs += array('sort' => $_REQUEST['sort'], 'order' => $_REQUEST['order']);
 $pageNav->setURL('banlist.php', $qs);
 $qstr.='&amp;order='.($order=='DESC'?'ASC':'DESC');
-$query="$select $from $where ORDER BY $order_by LIMIT ".$pageNav->getStart().",".$pageNav->getLimit();
-//echo $query;
+
+// Prepare and execute parameterized query
+$sql = "$select $from $where ORDER BY $order_by LIMIT :start,:limit";
+$params[':start'] = $pageNav->getStart();
+$params[':limit'] = $pageNav->getLimit();
+$stmt = $db->prepare($sql);
+foreach ($params as $key => $value) {
+    $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+    $stmt->bindValue($key, $value, $type);
+}
+$stmt->execute();
+$res = $stmt;
+
+if(($num = $res->rowCount()))
+    $showing=$pageNav->showing();
+else
+    $showing=__('No banned emails matching the query found!');
+
+if($search)
+    $showing=__('Search Results').': '.$showing;
+
 ?>
 <div id='basic_search'>
     <div style="height:25px">
@@ -93,16 +114,6 @@ $query="$select $from $where ORDER BY $order_by LIMIT ".$pageNav->getStart().","
         </div>
     </div>
     <div class="clear"></div>
-    <?php
-    if(($res=db_query($query)) && ($num=db_num_rows($res)))
-        $showing=$pageNav->showing();
-    else
-        $showing=__('No banned emails matching the query found!');
-
-    if($search)
-        $showing=__('Search Results').': '.$showing;
-
-    ?>
     <?php csrf_token(); ?>
     <input type="hidden" name="do" value="mass_process" >
     <input type="hidden" id="action" name="a" value="" >
@@ -118,9 +129,9 @@ $query="$select $from $where ORDER BY $order_by LIMIT ".$pageNav->getStart().","
         </thead>
         <tbody>
         <?php
-            if($res && db_num_rows($res)):
+            if($res && ($num = $res->rowCount())):
                 $ids=($errors && is_array($_POST['ids']))?$_POST['ids']:null;
-                while ($row = db_fetch_array($res)) {
+                while ($row = $res->fetch(PDO::FETCH_ASSOC)) {
                     $sel=false;
                     if($ids && in_array($row['id'],$ids))
                         $sel=true;

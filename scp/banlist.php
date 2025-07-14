@@ -19,7 +19,7 @@ include_once(INCLUDE_DIR.'class.banlist.php');
 /* Get the system ban list filter */
 if(!($filter=Banlist::getFilter()))
     $warn = __('System ban list is empty.');
-elseif(!$filter->isActive())
+elif(!$filter->isActive())
     // XXX: This should never happen and can no longer be enabled via
     // this link
     $warn = __('SYSTEM BAN LIST filter is <b>DISABLED</b>').' - <a href="filters.php">'.__('enable here').'</a>.';
@@ -74,9 +74,11 @@ if($_POST && !$errors && $filter){
                 $count=count($_POST['ids']);
                 switch(strtolower($_POST['a'])) {
                     case 'enable':
+                        $ids = array_map('intval', $_POST['ids']);
+                        $idList = implode(',', $ids);
                         $sql='UPDATE '.FILTER_RULE_TABLE.' SET isactive=1 '
                             .' WHERE filter_id='.db_input($filter->getId())
-                            .' AND id IN ('.implode(',', db_input($_POST['ids'])).')';
+                            .' AND id IN ('.$idList.')';
                         if(db_query($sql) && ($num=db_affected_rows())){
                             if($num==$count)
                                 $msg = sprintf(__('Successfully enabled %s'),
@@ -90,9 +92,11 @@ if($_POST && !$errors && $filter){
                         }
                         break;
                     case 'disable':
+                        $ids = array_map('intval', $_POST['ids']);
+                        $idList = implode(',', $ids);
                         $sql='UPDATE '.FILTER_RULE_TABLE.' SET isactive=0 '
                             .' WHERE filter_id='.db_input($filter->getId())
-                            .' AND id IN ('.implode(',', db_input($_POST['ids'])).')';
+                            .' AND id IN ('.$idList.')';
                         if(db_query($sql) && ($num=db_affected_rows())) {
                             if($num==$count)
                                 $msg = sprintf(__('Successfully disabled %s'),
@@ -140,7 +144,7 @@ if(!$filter || ($rule || ($_REQUEST['a'] && !strcasecmp($_REQUEST['a'],'add'))))
 }
 
 $nav->setTabActive('emails');
-$ost->addExtraHeader('<meta name="tip-namespace" content="' . $tip_namespace . '" />',
+$ost->addExtraHeader('<meta name="tip-namespace" content="'. $tip_namespace .'" />',
     "$('#content').data('tipNamespace', '".$tip_namespace."');");
 require(STAFFINC_DIR.'header.inc.php');
 require(STAFFINC_DIR.$page);
