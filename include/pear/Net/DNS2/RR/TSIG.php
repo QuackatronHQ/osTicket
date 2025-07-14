@@ -458,38 +458,9 @@ class Net_DNS2_RR_TSIG extends Net_DNS2_RR
             return hash_hmac(self::$hash_algorithms[$algorithm], $data, $key, true);
         }
 
-        //
-        // if the hash extension isn't loaded, and they selected something other
-        // than MD5, throw an exception
-        //
-        if ($algorithm != self::HMAC_MD5) {
-
-            throw new Net_DNS2_Exception(
-                'only HMAC-MD5 supported. please install the php-extension ' .
-                '"hash" in order to use the sha-family',
-                Net_DNS2_Lookups::E_PARSE_ERROR
-            );
-        }
-
-        //
-        // otherwise, do it ourselves
-        //
-        if (is_null($key)) {
-
-            return pack('H*', md5($data));
-        }
-
-        $key = str_pad($key, 64, chr(0x00));
-        if (strlen($key) > 64) {
-    
-            $key = pack('H*', md5($key));
-        }
-
-        $k_ipad = $key ^ str_repeat(chr(0x36), 64);
-        $k_opad = $key ^ str_repeat(chr(0x5c), 64);
-
-        return $this->_signHMAC(
-            $k_opad . pack('H*', md5($k_ipad . $data)), null, $algorithm
+        throw new Net_DNS2_Exception(
+            'hash extension required for HMAC operations',
+            Net_DNS2_Lookups::E_PARSE_ERROR
         );
     }
 }

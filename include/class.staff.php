@@ -224,20 +224,17 @@ implements AuthenticatedUser, EmailContact, TemplateVariable, Searchable {
     function check_passwd($password, $autoupdate=true) {
 
         /*bcrypt based password match*/
-        if(Passwd::cmp($password, $this->getPasswd()))
+        if (password_verify($password, $this->getPasswd())) {
+            if (password_needs_rehash($this->getPasswd(), PASSWORD_DEFAULT)) {
+                $this->passwd = password_hash($password, PASSWORD_DEFAULT);
+                if (!$autoupdate || !$this->save()) {
+                    $this->forcePasswdRest();
+                }
+            }
             return true;
+        }
 
-        //Fall back to MD5
-        if(!$password || strcmp($this->getPasswd(), MD5($password)))
-            return false;
-
-        //Password is a MD5 hash: rehash it (if enabled) otherwise force passwd change.
-        $this->passwd = Passwd::hash($password);
-
-        if(!$autoupdate || !$this->save())
-            $this->forcePasswdRest();
-
-        return true;
+        return false;
     }
 
     function cmp_passwd($password) {
